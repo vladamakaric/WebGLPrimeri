@@ -4,9 +4,7 @@
 
 <script id="vertex-shader" type="x-shader/x-vertex">
 
-//deklarisemo atribut koji ce da crpi podatke iz nekog bafera, u nasem slucaju
-//podaci u programu su vec2 tipa (samo x i y koordinate), ali mozemo da ih stavimo u vec4,
-//samo ce se z i w podesiti na 0 i 1 odnosno.
+//deklarisemo atribut koji ce da crpi podatke iz nekog bafera 
 attribute vec4 vPosition;
 
 void

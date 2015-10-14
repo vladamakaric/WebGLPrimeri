@@ -4,18 +4,19 @@
 
 <script id="vertex-shader" type="x-shader/x-vertex">
 
-//deklarisemo atribut koji ce da crpi podatke iz nekog bafera, u nasem slucaju
-//podaci u programu su vec2 tipa (samo x i y koordinate), ali mozemo da ih stavimo u vec4,
-//samo ce se z i w podesiti na 0 i 1 odnosno.
-attribute vec4 vPosition;
+attribute vec2 vPosition;
+attribute vec4 vertColor;
 
-void
-main()
+varying vec4 vColor;
+
+//uniformna promenjiva se ne menja tokom citavog gl.DrawArays poziva
+uniform mat2 u_ltransf;
+
+void main()
 {
-	
-	
-	//koordinate su vec date u clipspace, nista nediramo
-	gl_Position = vPosition;
+	vColor = vertColor;
+	//transformisemo vektor iz bafera sa matricom u_transf i pretvaramo ga u 4D vektor
+	gl_Position = vec4(u_ltransf*vPosition, 0,1);
 }
 </script>
 
@@ -23,11 +24,11 @@ main()
 
 precision mediump float;
 
-void
-main()
+varying vec4 vColor;
+
+void main()
 {
-	//svakom fragmentu dodeljujemo crvenu boju (R,G,B) i alpha = 1 (bez transparencije)
-	gl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );
+	gl_FragColor = vColor;
 }
 </script>
 

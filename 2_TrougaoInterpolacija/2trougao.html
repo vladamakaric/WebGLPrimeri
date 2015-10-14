@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+
+attribute vec4 vPosition;
+
+//atribut u kojem ce biti boja za svaki vertex
+attribute vec4 vertColor;
+
+//deklarise se izlazni varijabilni atribut koji ce se proslediti fragment shaderu
+//fragment shader ce te atribute da interpolira za svaki piksel, ako se crta trougao
+//onda ce da uzme varying od svakog od 3 vertexa i interpolirace ih za svaki fragment na povrsini
+//trougla
+varying vec4 vColor;
+
+void
+main()
+{
+	//prosledjuje se boja fragment shaderu
+	vColor = vertColor;
+	gl_Position = vPosition;
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+
+precision mediump float;
+
+//ulazna promenjiva iz vertex shadera mora imati isto ime ko i izlazna promenjiva u vertex shaderu
+varying vec4 vColor;
+
+void main()
+{
+	gl_FragColor = vColor;
+}
+</script>
+
+<script type="text/javascript" src="../common/webgl-utils.js"></script>
+<script type="text/javascript" src="../common/initShaders.js"></script>
+<script type="text/javascript" src="main.js"></script>
+
+</head>
+	<body>
+		<canvas id="gl-canvas" width="512" height="512">
+		</canvas>
+	</body>
+</html>
