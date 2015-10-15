@@ -16,9 +16,6 @@ uniform mat4 u_model;
 void main()
 {
 	vColor = vertColor;
-	//prvo se model prebacuje u koordinate sveta, to radi u_model transformacija, posle 
-	//se prebacuje u koordinate kamere, to radi u_camera a na kraju u clip space koordinate, to radi
-	//u_proj
 	gl_Position = u_proj*u_camera*u_model*vPosition;
 }
 </script>
@@ -38,6 +35,7 @@ void main()
 <script type="text/javascript" src="../common/webgl-utils.js"></script>
 <script type="text/javascript" src="../common/initShaders.js"></script>
 <script type="text/javascript" src="../common/MV.js"></script>
+<script type="text/javascript" src="models.js"></script>
 <script type="text/javascript" src="main.js"></script>
 
 </head>
