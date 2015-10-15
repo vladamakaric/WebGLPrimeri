@@ -10,12 +10,13 @@ attribute vec4 vertColor;
 varying vec4 vColor;
 
 uniform mat4 u_proj;
+uniform mat4 u_camera;
 uniform mat4 u_model;
 
 void main()
 {
 	vColor = vertColor;
-	gl_Position = u_proj*u_model*vPosition;
+	gl_Position = u_proj*u_camera*u_model*vPosition;
 }
 </script>
 
