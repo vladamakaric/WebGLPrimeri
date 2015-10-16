@@ -13,7 +13,16 @@ var grid;
 var cameraY = 100;
 var cameraDistance = 100;
 
+var fovy = 60;
 function setUpEventHandling(canvas){
+
+	var angleInput = document.getElementById("angle");
+	angleInput.value = fovy;
+
+	angleInput.oninput = function(){
+		fovy = angleInput.value;
+	}
+
 	canvas.onmousewheel = function (event){
 		var wheel = event.wheelDelta/120;
 		cameraDistance+=wheel;
@@ -62,7 +71,7 @@ window.onload = function init()
 	modelTLoc = gl.getUniformLocation(program, "u_model");
 	cameraTLoc = gl.getUniformLocation(program, "u_camera");
 
-	gl.uniformMatrix4fv(projectionTLoc, false, flatten(ortho(-100, 100, -100, 100, -2000,2000)));
+
 
 	vPosition = gl.getAttribLocation( program, "vPosition" );
 	vertColor = gl.getAttribLocation( program, "vertColor" );
@@ -83,6 +92,8 @@ window.onload = function init()
 function render() {
 	gl.clear(gl.COLOR_BUFFER_BIT  | gl.DEPTH_BUFFER_BIT);
 	t+=0.009;
+
+	gl.uniformMatrix4fv(projectionTLoc, false, flatten(perspective(fovy, 1, 10, 1000)));
 
 	console.log(cameraDistance);
 	var modelMat;
