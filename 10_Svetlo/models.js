@@ -24,6 +24,29 @@ function loadTexture(gl,filename){
 	return texture;
 }
 
+
+function Triangle(gl){
+
+	var vertBuff = createFloatArrayBuffer(gl, 3, [
+			0,0,1,
+			1,0,-1,
+			-1,0,-1
+			]);
+
+	var colBuff = createFloatArrayBuffer(gl, 4, [
+			1,1,1,1,
+			1,1,1,1,
+			1,1,1,1
+			]);
+
+	var attribBuffers = {vertex: vertBuff,
+				   color: colBuff};
+
+	return {attribBuffers,  nVerts: 3, primtype: gl.TRIANGLES};
+}
+
+
+
 function createCube(gl) {
 
 	var normalBuffer = createFloatArrayBuffer(gl, 3, [

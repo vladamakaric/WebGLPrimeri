@@ -25,15 +25,20 @@ function loadAttributes(attributes, gl, program){
 //program se inicijalizuje tako sto se shaderi iskompajliraju a posle
 //se svim atributima nalazi lokacija u shaderu i sve uniformne promenjive 
 //koje su specificne za dati program se vezuju za njega
-function initProgram(gl, vsId, fsId, attribs, uniforms){
+function ShaderProgram(gl, vsId, fsId, attribs, uniforms){
 	var programId = initShaders( gl, vsId, fsId);
 	loadAttributes(attribs, gl, programId);
 	bindUniformsToProgram(uniforms, programId, gl);
 	return {id: programId, attributes: attribs, uniforms};
 }
 
-function useProgram(program, gl){
+function useProgram(gl, program, sharedUniforms, sharedUniformData){
+	sharedUniforms = sharedUniforms || {};
+	sharedUniformData = sharedUniformData || {};
+
 	gl.useProgram( program.id );
+	bindUniformsToProgram(sharedUniforms, program.id, gl);
+	setUniformData(sharedUniforms, sharedUniformData);
 }
 
 function setProgramAttributes(gl, obj, program){
