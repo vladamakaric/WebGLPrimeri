@@ -1,15 +1,9 @@
-function setAttributes(gl, obj, attributes){
-
-	console.log(attributes.vertex.loc + " " + attributes.texcoord.loc + " " + attributes.normal.loc);
-
+function setAttributes(gl, obj, vAtribLoc, tcAtribLoc){
 	gl.bindBuffer(gl.ARRAY_BUFFER, obj.vertBuffer);
-	gl.vertexAttribPointer(attributes.vertex.loc, obj.vertSize, gl.FLOAT, false, 0, 0);
+	gl.vertexAttribPointer(vAtribLoc, obj.vertSize, gl.FLOAT, false, 0, 0);
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, obj.texCoordBuffer);
-	gl.vertexAttribPointer(attributes.texcoord.loc, 2, gl.FLOAT, false, 0, 0);
-
-	gl.bindBuffer(gl.ARRAY_BUFFER, obj.normalBuffer);
-	gl.vertexAttribPointer(attributes.normal.loc, 3, gl.FLOAT, false, 0, 0);
+	gl.vertexAttribPointer(tcAtribLoc, 2, gl.FLOAT, false, 0, 0);
 }
 
 function createFloatArrayBuffer(gl, array){
@@ -69,42 +63,11 @@ function createPlane(gl){
 function createCube(gl) {
 
 	// Vertex Data
+	var vertexBuffer;
+	vertexBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
 
-
-	var normalBuffer = createFloatArrayBuffer(gl, [
-			0,0,1.0,
-			0,0,1.0,
-			0,0,1.0,
-			0,0,1.0,
-
-			0,0,-1.0,
-			0,0,-1.0,
-			0,0,-1.0,
-			0,0,-1.0,
-
-			0,1.0,0,
-			0,1.0,0,
-			0,1.0,0,
-			0,1.0,0,
-
-			0,-1.0,0,
-			0,-1.0,0,
-			0,-1.0,0,
-			0,-1.0,0,
-
-			1.0,0,0,
-			1.0,0,0,
-			1.0,0,0,
-			1.0,0,0,
-
-			-1.0,0,0,
-			-1.0,0,0,
-			-1.0,0,0,
-			-1.0,0,0
-				]);
-
-
-	var vertexBuffer = createFloatArrayBuffer(gl, [
+	var verts = [
 		// Front face
 		-1.0, -1.0, 1.0,
 		1.0, -1.0, 1.0,
@@ -140,10 +103,14 @@ function createCube(gl) {
 		-1.0, -1.0, 1.0,
 		-1.0, 1.0, 1.0,
 		-1.0, 1.0, -1.0
-			]);
+			];
 
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
 
-	var texCoordBuff = createFloatArrayBuffer( gl,[
+	var texCoordBuff = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuff);
+
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
 				0,1, 
 				1,1,
 				1,0,
@@ -173,7 +140,7 @@ function createCube(gl) {
 				1,1,
 				1,0,
 				0,0
-					]);
+					]), gl.STATIC_DRAW);
 
 	// Index data (defines the triangles to be drawn)
 	var cubeIndexBuffer = gl.createBuffer();
@@ -190,46 +157,9 @@ function createCube(gl) {
 			];
 	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(cubeIndices), gl.STATIC_DRAW);
 
-	var cube = {vertBuffer:vertexBuffer, indxBuffer:cubeIndexBuffer, normalBuffer: normalBuffer, texCoordBuffer: texCoordBuff,
+	var cube = {vertBuffer:vertexBuffer, indxBuffer:cubeIndexBuffer, texCoordBuffer: texCoordBuff,
 		vertSize:3, nVerts:24, nIndices:36,
 		primtype: gl.TRIANGLES};
 
 	return cube;
-}
-function setUpEventHandling(canvas){
-
-	var angleInput = document.getElementById("angle");
-	angleInput.value = fovy;
-
-	angleInput.oninput = function(){
-		fovy = angleInput.value;
-	}
-
-	canvas.onmousewheel = function (event){
-		var wheel = event.wheelDelta/120;
-		cameraDistance+=wheel;
-		cameraDistance = Math.max(cameraDistance, 0);
-	}
-
-	document.onkeydown = checkKey;
-
-	function checkKey(e) {
-		e = e || window.event;
-
-		if (e.keyCode == '38') {
-			//up
-		   cameraY +=5; 
-		}
-		else if (e.keyCode == '40') {
-			//down
-		   cameraY -=5; 
-		}
-		else if (e.keyCode == '37') {
-		   // left arrow
-		}
-		else if (e.keyCode == '39') {
-		   // right arrow
-		}
-
-	}
 }

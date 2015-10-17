@@ -1,7 +1,6 @@
 var gl;
 var t = 0;
 var vPosition;
-var projectionTLoc, modelTLoc, cameraTLoc;
 var texCoordLoc;
 
 var cube;
@@ -12,43 +11,29 @@ var fovy = 60;
 var texture;
 var texture2;
 var plane;
+var uniforms;
+var attributes;
 
-function setUpEventHandling(canvas){
-
-	var angleInput = document.getElementById("angle");
-	angleInput.value = fovy;
-
-	angleInput.oninput = function(){
-		fovy = angleInput.value;
+function setMat4fv(gl){
+	return function(loc, data){
+		gl.uniformMatrix4fv(loc, false, data);
 	}
+}
 
-	canvas.onmousewheel = function (event){
-		var wheel = event.wheelDelta/120;
-		cameraDistance+=wheel;
-		cameraDistance = Math.max(cameraDistance, 0);
-	}
+function Uniform(name, setter, gl, program){
+	var loction = gl.getUniformLocation(program, name); 
+	return {loc: loction, set: function(data) {
+		setter.call(gl, loction, data); 
+	} };
+}
 
-	document.onkeydown = checkKey;
-
-	function checkKey(e) {
-		e = e || window.event;
-
-		if (e.keyCode == '38') {
-			//up
-		   cameraY +=5; 
-		}
-		else if (e.keyCode == '40') {
-			//down
-		   cameraY -=5; 
-		}
-		else if (e.keyCode == '37') {
-		   // left arrow
-		}
-		else if (e.keyCode == '39') {
-		   // right arrow
-		}
-
-	}
+function loadAttributes(attributes, gl, program){
+	$.each(attributes, function(k, v) {
+		console.log(v.name);
+		v.loc = gl.getAttribLocation( program, v.name );
+		console.log(v.loc);
+		gl.enableVertexAttribArray( v.loc  );
+	});
 }
 
 window.onload = function init()
@@ -65,26 +50,30 @@ window.onload = function init()
 	var program = initShaders( gl, "vertex-shader", "fragment-shader" );
 	gl.useProgram( program );
 
-	projectionTLoc = gl.getUniformLocation(program, "u_proj");
-	modelTLoc = gl.getUniformLocation(program, "u_model");
-	cameraTLoc = gl.getUniformLocation(program, "u_camera");
+	attributes = {
+		normal: {name: "aNormal_ms"},
+		vertex: {name: "aVertexPosition_ms"},
+		texcoord: {name: "aTexcoord"}
+	};
 
-	texCoordLoc = gl.getAttribLocation( program, "a_texcoord" );
-	vPosition = gl.getAttribLocation( program, "vPosition" );
+	loadAttributes(attributes, gl, program);
 
-	gl.enableVertexAttribArray( texCoordLoc  );
-	gl.enableVertexAttribArray( vPosition );
+	uniforms = {
+		P : Uniform("P", setMat4fv(gl), gl, program),
+		M : Uniform("M", setMat4fv(gl), gl, program),
+		V : Uniform("V", setMat4fv(gl), gl, program),
+		lightPosition_ws : Uniform("uLightPosition_ws", gl.uniform3fv, gl, program)};
 
+	uniforms.lightPosition_ws.set(flatten([100,30,0]));
+	
 	cube = createCube(gl);
 	plane = createPlane(gl);
 
-	//ucitavanje GL tekstura, asinhrono
 	texture = loadTexture(gl,"crate.jpg");
 	texture2 = loadTexture(gl,"road.jpg");
 
 	setUpEventHandling(canvas);
 	render();
-
 };
 
 
@@ -93,11 +82,12 @@ function render() {
 	gl.clear(gl.COLOR_BUFFER_BIT  | gl.DEPTH_BUFFER_BIT);
 	t+=0.009;
 
-	gl.uniformMatrix4fv(projectionTLoc, false, flatten(perspective(fovy, 1, 10, 1000)));
+	uniforms.P.set(flatten(perspective(fovy, 1, 10, 1000)));
 
-	gl.uniformMatrix4fv(cameraTLoc, false, flatten(lookAt([cameraDistance*Math.cos(t),(cameraDistance/100)*cameraY,cameraDistance*Math.sin(t)], [0,0,0], [0,1,0])));
+	uniforms.V.set(flatten(lookAt([cameraDistance*Math.cos(t),(cameraDistance/100)*cameraY,cameraDistance*Math.sin(t)], [0,0,0], [0,1,0])));
 	
-	setAttributes(gl, cube, vPosition, texCoordLoc);
+	setAttributes(gl, cube, attributes); 
+
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cube.indxBuffer);
 
 	var x= -60; 
@@ -109,18 +99,18 @@ function render() {
 	for(var i=0; i<5; i++){
 		for(var j=0; j<5; j++){
 			modelMat = mult(translate(x+i*30, 5, z+j*30), scalem(5,5,5));
-			gl.uniformMatrix4fv(modelTLoc, false, flatten(modelMat));
+			uniforms.M.set(flatten(modelMat));
 			gl.drawElements(cube.primtype, cube.nIndices, gl.UNSIGNED_SHORT, 0);
 		}
 	}
 
 
 	//aktivacija druge teksture za put
-	gl.bindTexture(gl.TEXTURE_2D, texture2);
-	gl.uniformMatrix4fv(modelTLoc, false, flatten(scalem(100,100,100)));
-
-	setAttributes(gl, plane, vPosition, texCoordLoc);
-	gl.drawArrays(plane.primtype, 0, plane.nVerts);
+	// gl.bindTexture(gl.TEXTURE_2D, texture2);
+	// gl.uniformMatrix4fv(modelTLoc, false, flatten(scalem(100,100,100)));
+    //
+	// setAttributes(gl, plane, vPosition, texCoordLoc);
+	// gl.drawArrays(plane.primtype, 0, plane.nVerts);
 
 	requestAnimFrame( render );
 }
