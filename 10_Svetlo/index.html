@@ -2,7 +2,7 @@
 <html>
 <head>
 
-<script id="vertex-shader" type="x-shader/x-vertex">
+<script id="phong-vshader" type="x-shader/x-vertex">
 
 precision mediump float;
 attribute vec3 aNormal_ms;
@@ -48,7 +48,7 @@ void main()
 
 </script>
 
-<script id="fragment-shader" type="x-shader/x-fragment">
+<script id="phong-fshader" type="x-shader/x-fragment">
 precision mediump float;
 
 varying vec2 vTexcoord;
@@ -97,6 +97,7 @@ void main() {
 <script type="text/javascript" src="../common/initShaders.js"></script>
 <script type="text/javascript" src="../common/MV.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script type="text/javascript" src="shaderProgram.js"></script>
 <script type="text/javascript" src="models.js"></script>
 <script type="text/javascript" src="main.js"></script>
 
