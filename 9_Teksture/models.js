@@ -1,90 +1,64 @@
-function setAttributes(gl, obj, vAtribLoc, cAtribLoc){
+function setAttributes(gl, obj, vAtribLoc, tcAtribLoc){
 	gl.bindBuffer(gl.ARRAY_BUFFER, obj.vertBuffer);
 	gl.vertexAttribPointer(vAtribLoc, obj.vertSize, gl.FLOAT, false, 0, 0);
 
-	if(cAtribLoc>=0){
-
-	gl.bindBuffer(gl.ARRAY_BUFFER, obj.colorBuffer);
-	gl.vertexAttribPointer(cAtribLoc, obj.colorSize, gl.FLOAT, false, 0, 0);
-	}
+	gl.bindBuffer(gl.ARRAY_BUFFER, obj.texCoordBuffer);
+	gl.vertexAttribPointer(tcAtribLoc, 2, gl.FLOAT, false, 0, 0);
 }
 
-function createGrid(xLines, zLines){
-
-	var verts = [];
-	var colors = [];
-
-	var width = xLines-1;
-	var lenght = zLines-1;
-	
-	var x=-width/2;
-	var z=-lenght/2
-
-	for(var i=0; i<xLines; i++){
-			verts.push(x+i, 0, z);
-			verts.push(x+i, 0, -z);
-			colors.push(1,1,1,1);
-			colors.push(1,1,1,1);
-	}
-
-	for(var i=0; i<zLines; i++){
-			verts.push(x, 0, z+i);
-			verts.push(-x, 0, z+i);
-			colors.push(1,1,1,1);
-			colors.push(1,1,1,1);
-	}
-
-	console.log(verts);
-	console.log(colors);
-
-	var vertexBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
-
-	var colorBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-
-	return {vertBuffer:vertexBuffer, colorBuffer:colorBuffer, vertSize:3, nVerts:verts.length/3, colorSize:4, nColors: colors.length/4, primtype: gl.LINES};
+function createFloatArrayBuffer(gl, array){
+	var arrBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, arrBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(array), gl.STATIC_DRAW);
+	return arrBuffer;
 }
 
-function createCoordSys(gl){
+function loadTexture(gl,filename){
 
-	//duzi koje definisu ose
-	var verts = [
-		//x
-		1.0,0.0,0.0, 
-		0.0,0.0,0.0,
-		//y
-		0.0,0.0,0.0,
-		0.0,1.0,0.0,
-		//z
-		0.0,0.0,0.0,
-		0.0,0.0,1.0
-	];
+	var texture = gl.createTexture();
+	gl.bindTexture(gl.TEXTURE_2D, texture);
 
-	var colors = [
-		1.0, 0.0, 0.0, 1.0, 
-		1.0, 0.0, 0.0, 1.0, 
+	//posto se tekstura ucitava asinhrono, dok se ne ucita prava slika u teksturu se stavlja 1 piksel crvene boje, 
+	//cisto da ako dodje do crtanja pre nego sto se slika ucita.
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+				  new Uint8Array([255, 0, 0, 255]));
 
-		0.0, 1.0, 0.0, 1.0, 
-		0.0, 1.0, 0.0, 1.0, 
+	// Asynchronously load an image
+	var image = new Image();
+	image.src = filename;
+	image.onload = function(){
 
-		0.0, 0.0, 1.0, 1.0, 
-		0.0, 0.0, 1.0, 1.0
-	];
+	  gl.bindTexture(gl.TEXTURE_2D, texture);
+	  //kopiranje piksela sa slike u teksturu
+	  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
-	var vertexBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
+	  //kreiranje mipmapa,tj. manjih verzija slike, za lakse samplovanje pri razlicitim velicinama geometrije
+	  gl.generateMipmap(gl.TEXTURE_2D);
+	}
 
-	var colorBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-
-	return {vertBuffer:vertexBuffer, colorBuffer:colorBuffer, vertSize:3, nVerts:6, colorSize:4, nColors: 6, primtype: gl.LINES};
+	return texture;
 }
 
+function createPlane(gl){
+
+	var vertexBuffer = createFloatArrayBuffer(gl, [	
+		-1.0, 0.0, -1.0,
+		1.0, 0.0, -1.0,
+		1.0, 0.0, 1.0,
+		-1.0, 0.0, 1.0
+			]);
+
+	var texCoordBuff = createFloatArrayBuffer(gl, [
+				0,1, 
+				1,1,
+				1,0,
+				0,0
+			]);
+
+		return {vertBuffer: vertexBuffer, texCoordBuffer: texCoordBuff,
+		vertSize:3, nVerts:4, 
+		primtype: gl.TRIANGLE_FAN};
+}
 
 function createCube(gl) {
 
@@ -133,32 +107,45 @@ function createCube(gl) {
 
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
 
-	// Color data
-	var colorBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+	var texCoordBuff = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuff);
 
-	var faceColors = [
-		[1.0, 0.0, 0.0, 1.0], // Front face
-		[0.0, 1.0, 0.0, 1.0], // Back face
-		[0.0, 0.0, 1.0, 1.0], // Top face
-		[1.0, 1.0, 0.0, 1.0], // Bottom face
-		[1.0, 0.0, 1.0, 1.0], // Right face
-		[0.0, 1.0, 1.0, 1.0]  // Left face
-			];
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+				0,1, 
+				1,1,
+				1,0,
+				0,0,
 
-	var vertexColors = [];
-	for (var i in faceColors) {
-		var color = faceColors[i];
-		for (var j=0; j < 4; j++) {
-			vertexColors = vertexColors.concat(color);
-		}
-	}
+				0,1, 
+				1,1,
+				1,0,
+				0,0,
 
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexColors), gl.STATIC_DRAW);
+				0,1, 
+				1,1,
+				1,0,
+				0,0,
+
+				0,1, 
+				1,1,
+				1,0,
+				0,0,
+
+				0,1, 
+				1,1,
+				1,0,
+				0,0,
+
+				0,1, 
+				1,1,
+				1,0,
+				0,0
+					]), gl.STATIC_DRAW);
 
 	// Index data (defines the triangles to be drawn)
 	var cubeIndexBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeIndexBuffer);
+
 
 	var cubeIndices = [
 		0, 1, 2,      0, 2, 3,    // Front face
@@ -170,8 +157,8 @@ function createCube(gl) {
 			];
 	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(cubeIndices), gl.STATIC_DRAW);
 
-	var cube = {vertBuffer:vertexBuffer, colorBuffer:colorBuffer, indxBuffer:cubeIndexBuffer,
-		vertSize:3, nVerts:24, colorSize:4, nColors: 24, nIndices:36,
+	var cube = {vertBuffer:vertexBuffer, indxBuffer:cubeIndexBuffer, texCoordBuffer: texCoordBuff,
+		vertSize:3, nVerts:24, nIndices:36,
 		primtype: gl.TRIANGLES};
 
 	return cube;
