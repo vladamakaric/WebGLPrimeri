@@ -117,26 +117,36 @@ function concatenateArrOfArrs(arroarr){
 		arr = arr.concat(a);
 	});
 
-	console.log(arr);
 	return arr;
 }
 
 function Surface(func, xPderiv, yPderiv, width, height, wsamples, hsamples){
-	var vertices = [];
 	var dx = width/(wsamples-1);
 	var dy = height/(hsamples-1);
 	var i,j;
+
+	var vertices = [];
+	var texCoords = [];
+	var normals = [];
+	var indices = [];
 
 	for(i=0; i<hsamples; i++){
 		var y = i*dy - height/2;
 
 		for(j=0; j<wsamples; j++){
 			var x = j*dx - width/2;
+
+			var xTan = vec3(1, xPderiv(x,y), 0);
+			var yTan = vec3(0, yPderiv(x,y), 1);
+
+			var normal = cross(yTan, xTan);
+			normals.push(normal);
+			texCoords.push(j*dx/width, i*dy/height);
 			vertices.push(x, func(x,y), y);
 		}
 	}
 
-	var indices = [];
+	normals = concatenateArrOfArrs(normals);
 
 	for(i=0; i<hsamples-1; i++){
 
@@ -151,20 +161,9 @@ function Surface(func, xPderiv, yPderiv, width, height, wsamples, hsamples){
 		}
 	}
 
-	var colors = [];
 
-	for(i=0; i<vertices.length/3; i++){
-		colors.push(Math.random(),Math.random(),Math.random(),1);
-	}
-
-	console.log(vertices);
-	console.log(indices);
-	console.log(colors);
-
-	var colBuff = createFloatArrayBuffer(gl, 4, colors);
-
-	// var normalBuffer = createFloatArrayBuffer(gl, 3, normals);
-	// var texCoordBuffer = createFloatArrayBuffer(gl, 2, texCoords);
+	var normalBuffer = createFloatArrayBuffer(gl, 3, normals);
+	var texCoordBuffer = createFloatArrayBuffer(gl, 2, texCoords);
 	var vertexBuffer = createFloatArrayBuffer(gl, 3, vertices);
 
 	var indexBuffer = gl.createBuffer();
@@ -172,7 +171,8 @@ function Surface(func, xPderiv, yPderiv, width, height, wsamples, hsamples){
 	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 
 	var attribBuffers = {vertex: vertexBuffer,
-				   color: colBuff};
+				   normal: normalBuffer,
+				   texcoord: texCoordBuffer};
 
 	return {indxBuffer:indexBuffer,attribBuffers,  
 		nVerts:vertices.length, nIndices:indices.length, primtype: gl.TRIANGLE_STRIP};

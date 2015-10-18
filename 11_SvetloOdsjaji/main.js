@@ -65,15 +65,42 @@ window.onload = function init()
 	cone = Cone(gl);
 
 
+	function sphere(x,y){
+		return 40 + Math.sqrt(100 - Math.pow(x,2) - Math.pow(y,2));
+
+	}
+
+	var scale = -0.01;
+
 	function sq(x,y){
-		var scale = -0.05;
 		return 40 + scale*Math.pow(x, 2) + scale*Math.pow(y, 2);
 	}
 
+	function sqPx(x,y){
+		return scale*2*x;
+	}
 
+	function sqPy(x,y){
+		return scale*2*y;
+	}
+	var gscale = 20;
+	var gxscale = 0.1;
+	var gyscale = 0.1;
 
-	surface = Surface(sq, 0,0, 30,30, 20,20);
+	function gauss(x,y){
+		return 20 +  gscale*Math.exp(-Math.pow(x*gxscale,2) - Math.pow(y*gyscale,2));
+	}
 
+	function gaussPx(x,y){
+		return -2*x*gxscale*gxscale*(gauss(x,y) -20);
+	}
+
+	function gaussPy(x,y){
+		return -2*y*gyscale*gyscale*(gauss(x,y) - 20);
+	}
+
+	surface = Surface(sq, sqPx,sqPy, 60,60, 20,20);
+	surface = Surface(gauss, gaussPx, gaussPy, 60,60, 100,100);
 	
 	texture = loadTexture(gl,"crate.jpg");
 	texture2 = loadTexture(gl,"metal.jpg");
@@ -132,19 +159,22 @@ function render() {
 	gl.bindTexture(gl.TEXTURE_2D, texture2);
 	drawObject(gl, cone);
 
+
+	sharedUniforms.M.set(flatten(scalem(1,1,1)));
+
+	setProgramAttributes(gl, surface, phongProgram); 
+	drawObject(gl, surface);
+
 	///////////////////
 	useProgram(gl, primitiveProgram, sharedUniforms, sharedUniformData);
 
 	modelMat = mult(translate(lightPosition[0], lightPosition[1], lightPosition[2]), scalem(5,5,5));
+
 	sharedUniforms.M.set(flatten(modelMat));
 
 	setProgramAttributes(gl, lightModel, primitiveProgram); 
 	drawObject(gl, lightModel);
 
-	sharedUniforms.M.set(flatten(scalem(1,1,1)));
-
-	setProgramAttributes(gl, surface, primitiveProgram); 
-	drawObject(gl, surface);
 
 	requestAnimFrame( render );
 }
