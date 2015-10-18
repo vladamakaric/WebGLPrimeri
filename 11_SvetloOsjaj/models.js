@@ -18,76 +18,10 @@ function loadTexture(gl,filename){
 	image.onload = function(){
 	  gl.bindTexture(gl.TEXTURE_2D, texture);
 	  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 	  gl.generateMipmap(gl.TEXTURE_2D);
 	}
 
 	return texture;
-}
-
-function Cone(gl){
-
-	var sides = 100;
-	var vertices = [];
-
-	var dAngle = 2*Math.PI/sides;
-
-	var normals = [];
-
-	var texCoords = [];
-
-	for(var i=0; i<sides+1; i++){
-		var currAngle = i*dAngle;
-
-		texCoords.push(currAngle/(2*Math.PI), 0);
-		texCoords.push(currAngle/(2*Math.PI), 1);
-		vertices.push([0,1,0]);
-		vertices.push([Math.cos(currAngle), 0, Math.sin(currAngle)]);
-	}
-
-	var indices = [];
-
-	for(var i=0; i<sides+1; i++){
-		//vrh
-		indices.push(2*i);
-		var findx = 2*i+1;
-		var sindx = (2*i + 3)%(sides*2+2);
-		indices.push(findx, sindx);
-
-		var vertDispl = vec3([0,1,0]);
-		var fNorm = normalize(add(vertDispl,vec3(vertices[findx])));
-		var sNorm = normalize(add(vertDispl,vec3(vertices[sindx])));
-
-		var apexNorm = normalize(add(vec3(vertices[findx]), vec3(vertices[sindx])));
-		apexNorm = normalize(add(apexNorm, vertDispl));
-
-		normals.push.apply(normals, flatten(apexNorm));
-		normals.push.apply(normals, flatten(fNorm));
-	}
-
-	var vertices2 = [];
-	
-	vertices.forEach(function(v){
-		vertices2.push.apply(vertices2, v);
-	});
-	
-	
-
-	var normalBuffer = createFloatArrayBuffer(gl, 3, normals);
-	var texCoordBuffer = createFloatArrayBuffer(gl, 2, texCoords);
-	var vertexBuffer = createFloatArrayBuffer(gl, 3, vertices2);
-
-	var indexBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
-
-	var attribBuffers = {vertex: vertexBuffer,
-				   normal: normalBuffer,
-				   texcoord: texCoordBuffer};
-
-	return {indxBuffer:indexBuffer,attribBuffers,  
-		nVerts:vertices2.length, nIndices:indices.length, primtype: gl.TRIANGLES};
 }
 
 
@@ -111,54 +45,6 @@ function Triangle(gl){
 	return {attribBuffers,  nVerts: 3, primtype: gl.TRIANGLES};
 }
 
-function concatenateArrOfArrs(arroarr){
-	var arr = [];
-	arroarr.forEach(function(a){
-		arr = arr.concat(a);
-	});
-
-	console.log(arr);
-	return arr;
-}
-
-function Tetrahedron(gl){
-
-
-
-
-	var theta = Math.PI*2/3;
-	var apex = [0,1,0];
-	var v1 = [1,0,0];
-	var v2 = [Math.cos(theta),0,Math.sin(theta)];
-	var v3 = [Math.cos(2*theta),0,Math.sin(2*theta)];
-
-	var vertBuff = createFloatArrayBuffer(gl, 3, concatenateArrOfArrs([
-			v1,
-			v2,
-			v3,
-			v1,
-			apex,
-			v2,
-			apex,
-			v3
-			]));
-
-	var colBuff = createFloatArrayBuffer(gl, 4, [
-			1,1,1,1,
-			1,1,1,1,
-			1,1,1,1,
-			1,1,1,1,
-			1,1,1,1,
-			1,1,1,1,
-			1,1,1,1,
-			1,1,1,1
-			]);
-
-	var attribBuffers = {vertex: vertBuff,
-				   color: colBuff};
-
-	return {attribBuffers,  nVerts: 8, primtype: gl.LINE_STRIP};
-}
 
 
 function createCube(gl) {
@@ -289,4 +175,41 @@ function createCube(gl) {
 		nVerts:24, nIndices:36, primtype: gl.TRIANGLES};
 
 	return cube;
+}
+function setUpEventHandling(canvas){
+
+	var angleInput = document.getElementById("angle");
+	angleInput.value = fovy;
+
+	angleInput.oninput = function(){
+		fovy = angleInput.value;
+	}
+
+	canvas.onmousewheel = function (event){
+		var wheel = event.wheelDelta/120;
+		cameraDistance+=wheel;
+		cameraDistance = Math.max(cameraDistance, 0);
+	}
+
+	document.onkeydown = checkKey;
+
+	function checkKey(e) {
+		e = e || window.event;
+
+		if (e.keyCode == '38') {
+			//up
+		   cameraY +=5; 
+		}
+		else if (e.keyCode == '40') {
+			//down
+		   cameraY -=5; 
+		}
+		else if (e.keyCode == '37') {
+		   // left arrow
+		}
+		else if (e.keyCode == '39') {
+		   // right arrow
+		}
+
+	}
 }

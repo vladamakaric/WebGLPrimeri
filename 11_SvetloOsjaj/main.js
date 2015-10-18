@@ -7,7 +7,6 @@ var cameraDistance = 100;
 
 var fovy = 60;
 var texture;
-var texture2;
 
 var sharedUniforms;
 
@@ -16,10 +15,6 @@ var phongProgram;
 var primitiveProgram;
 
 var lightModel;
-var cone;
-
-var lightPosition = [0, 60, 0];
-
 window.onload = function init()
 {
 	var canvas = document.getElementById( "gl-canvas" );
@@ -58,14 +53,12 @@ window.onload = function init()
 
 	bindUniformsToProgram(sharedUniforms, phongProgram.id, gl);
 
+	phongProgram.uniforms.lightPosition_ws.set(flatten([100,30,0]));
 	
 	cube = createCube(gl);
-	lightModel = Tetrahedron(gl);
-	cone = Cone(gl);
+	lightModel = Triangle(gl);
 
-	console.log(cone);
 	texture = loadTexture(gl,"crate.jpg");
-	texture2 = loadTexture(gl,"metal.jpg");
 
 	setUpEventHandling(canvas);
 	render();
@@ -88,7 +81,6 @@ function render() {
 							 V: flatten(lookAt([cameraDistance*Math.cos(t),(cameraDistance/100)*cameraY,cameraDistance*Math.sin(t)], [0,0,0], [0,1,0]))};
 
 	useProgram(gl, phongProgram, sharedUniforms, sharedUniformData);
-	phongProgram.uniforms.lightPosition_ws.set(flatten(lightPosition));
 
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cube.indxBuffer);
 
@@ -103,7 +95,6 @@ function render() {
 	var x= -60; 
 	var z= -60; 
 	
-	gl.bindTexture(gl.TEXTURE_2D, texture);
 	var modelMat;
 	for(var i=0; i<5; i++){
 		for(var j=0; j<5; j++){
@@ -113,21 +104,9 @@ function render() {
 		}
 	}
 
-	//////////////////////
-
-	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cone.indxBuffer);
-	setProgramAttributes(gl, cone, phongProgram); 
-
-	modelMat = mult(translate(0, 0, 0), scalem(20,20,20));
-	sharedUniforms.M.set(flatten(modelMat));
-
-	gl.bindTexture(gl.TEXTURE_2D, texture2);
-	gl.drawElements(cone.primtype, cone.nIndices, gl.UNSIGNED_SHORT, 0);
-
-	///////////////////
 	useProgram(gl, primitiveProgram, sharedUniforms, sharedUniformData);
 
-	modelMat = mult(translate(lightPosition[0], lightPosition[1], lightPosition[2]), scalem(5,5,5));
+	modelMat = mult(translate(100, 100, 100), scalem(30,30,30));
 	sharedUniforms.M.set(flatten(modelMat));
 
 	setProgramAttributes(gl, lightModel, primitiveProgram); 
