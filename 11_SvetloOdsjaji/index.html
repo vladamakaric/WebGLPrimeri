@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+
+<script id="primitive-vshader" type="x-shader/x-vertex">
+attribute vec4 aVertexPosition_ms;
+attribute vec4 aColor;
+
+varying vec4 vColor;
+
+uniform mat4 M;
+uniform mat4 V;
+uniform mat4 P;
+
+void main()
+{
+	vColor = aColor;
+	gl_Position = P*V*M*aVertexPosition_ms;
+}
+</script>
+
+<script id="primitive-fshader" type="x-shader/x-fragment">
+
+precision mediump float;
+
+varying vec4 vColor;
+
+void main()
+{
+	gl_FragColor = vColor;
+}
+</script>
+
+<script id="phong-vshader" type="x-shader/x-vertex">
+
+precision mediump float;
+
+//ms - model space
+//ws - world space
+//cs - camera space (eye space)
+
+//normale modela
+attribute vec3 aNormal_ms;
+attribute vec4 aVertexPosition_ms;
+attribute vec2 aTexcoord;
+
+varying vec2 vTexcoord;
+
+//pozicija vertexa u world space se salje fragment shaderu, jer
+//se intenzitet svetla za svaki fragment racuna na osnovu razdaljine od
+//pozicije svetla, svetlo je zadato u ws koordinatama.
+varying vec3 vVertexPosition_ws;
+
+//normale na vertexima se interpoliraju da daju normale na fragmentima
+varying vec3 vNormal_cs;
+
+//smer svetla se interpolira na svakom gragmentu
+varying vec3 vLightDirection_cs;
+
+//pozicija svetla u ws
+uniform vec3 uLightPosition_ws;
+
+//M-model transformacija, V- view transformacija (lookAt), P - projekcija (perspektiva)
+uniform mat4 M;
+uniform mat4 V;
+uniform mat4 P;
+// uniform mat3 N;
+
+void main()
+{
+	gl_Position = P*V*M*aVertexPosition_ms;
+	vVertexPosition_ws = (M*aVertexPosition_ms).xyz;
+
+	//obracune sa svetlom radimo u camera space-u, to jest u koordinatnom sistemu gde je kamera u centru,
+	//mogli smo da ih radimo i u world space-u, svejedno
+	vec3 lightPosition_cs = ( V * vec4(uLightPosition_ws,1)).xyz;
+	vec3 vertexPosition_cs = (V * M * aVertexPosition_ms).xyz;
+
+	vLightDirection_cs = lightPosition_cs - vertexPosition_cs;
+
+	//matrica za transformaciju normale
+	mat4 N = V*M;
+
+	vNormal_cs = (N*vec4(aNormal_ms,0)).xyz;
+	vTexcoord = aTexcoord;
+}
+
+</script>
+
+<script id="phong-fshader" type="x-shader/x-fragment">
+precision mediump float;
+
+varying vec2 vTexcoord;
+
+varying vec3 vVertexPosition_ws;
+varying vec3 vNormal_cs;
+varying vec3 vLightDirection_cs;
+
+uniform sampler2D uTexture;
+uniform vec3 uLightPosition_ws;
+
+void main() {
+	vec3 LightColor = vec3(1,1,1);
+
+	//Difuzna boja materijala, uzima se sa teskture
+	vec3 MaterialDiffuseColor = texture2D( uTexture, vTexcoord ).rgb;
+	//ambijentno osvetljenje, uzima se frakcija boje teksture
+	vec3 MaterialAmbientColor = 0.4 * MaterialDiffuseColor;
+	
+	float distance = length(uLightPosition_ws - vVertexPosition_ws);
+
+	vec3 n = normalize(vNormal_cs);
+	vec3 l = normalize(vLightDirection_cs);
+
+	float cosTheta = clamp(dot(n,l), 0.0,1.0);
+
+	float LightPower = 9000.0/(distance*distance);
+
+	gl_FragColor.rgb = 
+		//ambijentalna komponenta
+		MaterialAmbientColor +
+		//difuzna komponenta
+		MaterialDiffuseColor * LightColor * LightPower * cosTheta;
+
+	gl_FragColor.a = 1.0;
+}
+</script>
+
+<script type="text/javascript" src="../common/webgl-utils.js"></script>
+<script type="text/javascript" src="../common/initShaders.js"></script>
+<script type="text/javascript" src="../common/MV.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script type="text/javascript" src="shaderProgram.js"></script>
+<script type="text/javascript" src="models.js"></script>
+<script type="text/javascript" src="eventHandling.js"></script>
+<script type="text/javascript" src="main.js"></script>
+
+</head>
+	<body>
+		<canvas id="gl-canvas" width="800" height="800">
+		</canvas>
+	</body>
+					<div>
+					  Ugao kamere:
+					  <br>
+				  	  <input type="number" id="angle" min="10" max="80">	
+					</div>
+</html>
