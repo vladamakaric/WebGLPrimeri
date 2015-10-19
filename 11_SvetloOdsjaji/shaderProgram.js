@@ -56,6 +56,11 @@ function setProgramAttributes(gl, obj, program){
 	}
 }
 
+function setMat3fv(gl){
+	return function(loc, data){
+		gl.uniformMatrix3fv(loc, false, data);
+	}
+}
 function setMat4fv(gl){
 	return function(loc, data){
 		gl.uniformMatrix4fv(loc, false, data);

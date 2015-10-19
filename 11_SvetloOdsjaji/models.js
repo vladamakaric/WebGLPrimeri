@@ -26,6 +26,10 @@ function loadTexture(gl,filename){
 	return texture;
 }
 
+function getNormalTransformMat3(V,M){
+	return normalMatrix(mult(V,M), true);
+}
+
 function Cone(gl){
 
 	var sides = 100;

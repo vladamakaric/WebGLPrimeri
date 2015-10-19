@@ -58,6 +58,9 @@ varying vec3 vNormal_cs;
 //smer svetla se interpolira na svakom gragmentu
 varying vec3 vLightDirection_cs;
 
+//smer ka posmatracu, to jest ka kameri, potreban za odsjaje
+varying vec3 vEyeDirection_cs;
+
 //pozicija svetla u ws
 uniform vec3 uLightPosition_ws;
 
@@ -65,7 +68,9 @@ uniform vec3 uLightPosition_ws;
 uniform mat4 M;
 uniform mat4 V;
 uniform mat4 P;
-// uniform mat3 N;
+
+//matrica za transformaciju normale
+uniform mat3 N;
 
 void main()
 {
@@ -77,12 +82,10 @@ void main()
 	vec3 lightPosition_cs = ( V * vec4(uLightPosition_ws,1)).xyz;
 	vec3 vertexPosition_cs = (V * M * aVertexPosition_ms).xyz;
 
+	vEyeDirection_cs = vec3(0,0,0) - vertexPosition_cs;
 	vLightDirection_cs = lightPosition_cs - vertexPosition_cs;
 
-	//matrica za transformaciju normale
-	mat4 N = V*M;
-
-	vNormal_cs = (N*vec4(aNormal_ms,0)).xyz;
+	vNormal_cs = N*aNormal_ms;
 	vTexcoord = aTexcoord;
 }
 
@@ -96,6 +99,7 @@ varying vec2 vTexcoord;
 varying vec3 vVertexPosition_ws;
 varying vec3 vNormal_cs;
 varying vec3 vLightDirection_cs;
+varying vec3 vEyeDirection_cs;
 
 uniform sampler2D uTexture;
 uniform vec3 uLightPosition_ws;
@@ -107,21 +111,37 @@ void main() {
 	vec3 MaterialDiffuseColor = texture2D( uTexture, vTexcoord ).rgb;
 	//ambijentno osvetljenje, uzima se frakcija boje teksture
 	vec3 MaterialAmbientColor = 0.4 * MaterialDiffuseColor;
+
+	vec3 MaterialSpecularColor = vec3(0.3,0.3,0.3);
 	
 	float distance = length(uLightPosition_ws - vVertexPosition_ws);
 
 	vec3 n = normalize(vNormal_cs);
 	vec3 l = normalize(vLightDirection_cs);
+	vec3 e = normalize(vEyeDirection_cs);
 
+
+	//refleksija vektora -l oko vektora n, ekvivalentno refleksiji vektora -l
+	//oko povrsi koja je normalna na n
+	vec3 r = reflect(-l,n);
 	float cosTheta = clamp(dot(n,l), 0.0,1.0);
 
-	float LightPower = 9000.0/(distance*distance);
+	//ugao izmedju smera odbijene svetlosti i smera ka kameri, 
+	//sto je manji to je veci odsjaj
+	float cosAlpha = clamp( dot( e,r ), 0.0,1.0 );
+
+	float LightPower = 4000.0/(distance*distance);
+
+	//koliko je glatka povrsina odredjuje koliko je fokusiran odsjaj
+	float shininess=15.0;
 
 	gl_FragColor.rgb = 
 		//ambijentalna komponenta
 		MaterialAmbientColor +
 		//difuzna komponenta
-		MaterialDiffuseColor * LightColor * LightPower * cosTheta;
+		MaterialDiffuseColor * LightColor * LightPower * cosTheta +
+		//odsjajna komponenta
+		MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha, shininess); 
 
 	gl_FragColor.a = 1.0;
 }
@@ -141,9 +161,10 @@ void main() {
 		<canvas id="gl-canvas" width="800" height="800">
 		</canvas>
 	</body>
-					<div>
-					  Ugao kamere:
-					  <br>
-				  	  <input type="number" id="angle" min="10" max="80">	
-					</div>
+
+	<div>
+	  Ugao kamere:
+	  <br>
+	  <input type="number" id="angle" min="10" max="80">	
+	</div>
 </html>

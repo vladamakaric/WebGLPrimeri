@@ -20,6 +20,7 @@ var cone;
 
 var lightPosition = [0, 60, 0];
 var surface;
+var surface2;
 
 window.onload = function init()
 {
@@ -39,7 +40,8 @@ window.onload = function init()
 		texcoord: {name: "aTexcoord"}
 	}, 
 	{
-		lightPosition_ws : {name: "uLightPosition_ws", setter: gl.uniform3fv}
+		lightPosition_ws : {name: "uLightPosition_ws", setter: gl.uniform3fv},
+		N: {name: "N", setter: setMat3fv(gl)}
 	}
 	);
 
@@ -83,27 +85,45 @@ window.onload = function init()
 	function sqPy(x,y){
 		return scale*2*y;
 	}
+
 	var gscale = 20;
 	var gxscale = 0.1;
 	var gyscale = 0.1;
 
 	function gauss(x,y){
-		return 20 +  gscale*Math.exp(-Math.pow(x*gxscale,2) - Math.pow(y*gyscale,2));
+		return gscale*Math.exp(-Math.pow(x*gxscale,2) - Math.pow(y*gyscale,2));
 	}
 
 	function gaussPx(x,y){
-		return -2*x*gxscale*gxscale*(gauss(x,y) -20);
+		return -2*x*gxscale*gxscale*gauss(x,y);
 	}
 
 	function gaussPy(x,y){
-		return -2*y*gyscale*gyscale*(gauss(x,y) - 20);
+		return -2*y*gyscale*gyscale*gauss(x,y);
 	}
 
-	surface = Surface(sq, sqPx,sqPy, 60,60, 20,20);
+	// surface = Surface(sq, sqPx,sqPy, 60,60, 20,20);
 	surface = Surface(gauss, gaussPx, gaussPy, 60,60, 100,100);
+
+
+	var a = 0.01;
+	var s = 4;
+	function surf(x,y){
+		return s*Math.sin(a*x*y);
+	}
+
+	function surfPx(x,y){
+		return s*a*y*Math.cos(a*x*y);
+	}
+
+	function surfPy(x,y){
+		return surfPx(y,x);
+	}
+
+	surface2 = Surface(surf, surfPx, surfPy, 70,70, 100,100);
 	
-	texture = loadTexture(gl,"crate.jpg");
-	texture2 = loadTexture(gl,"metal.jpg");
+	texture = loadTexture(gl,"metal2.jpg");
+	texture2 = loadTexture(gl,"wood2.jpg");
 
 	setUpEventHandling(canvas);
 	render();
@@ -122,55 +142,50 @@ function render() {
 	gl.clear(gl.COLOR_BUFFER_BIT  | gl.DEPTH_BUFFER_BIT);
 	t+=0.009;
 
-	var sharedUniformData = {P: flatten(flatten(perspective(fovy, 1, 10, 1000))),
-							 V: flatten(lookAt([cameraDistance*Math.cos(t),(cameraDistance/100)*cameraY,cameraDistance*Math.sin(t)], [0,0,0], [0,1,0]))};
+	var V =  lookAt([cameraDistance*Math.cos(t),(cameraDistance/100)*cameraY,cameraDistance*Math.sin(t)], [0,0,0], [0,1,0]);
+	var M;
+
+	var sharedUniformData = {P: flatten(perspective(fovy, 1, 10, 1000)),
+							 V: flatten(V)};
 
 	useProgram(gl, phongProgram, sharedUniforms, sharedUniformData);
 	phongProgram.uniforms.lightPosition_ws.set(flatten(lightPosition));
 
-	//mora se zvati svaki frejm, jer koristimo dva shader programa, 
-	//drugim recima vertexAttrib pokazivaci nisu deo stanja programa, nego su vezani za globalno
-	//OpenGL stanje, to jest za trenutno aktivni program.
-	//e.g. ako povezemo atribut programa sa nekim baferom na GPU, taj atribut predstavlja samo offset u trenutnom programu,
-	//kao "slot", kada ucitamo drugi shader program, u njemu ce taj ofset biti neki drugi atribu i taj ofset ce onda pokazivati
-	//na neki drugi bafer.
-	/////////////////////////////////////////////////////////////////////
-	setProgramAttributes(gl, cube, phongProgram); 
-	var x= -60; 
-	var z= -60; 
-	
-	gl.bindTexture(gl.TEXTURE_2D, texture);
-	var modelMat;
-	for(var i=0; i<5; i++){
-		for(var j=0; j<5; j++){
-			modelMat = mult(translate(x+i*30, 5, z+j*30), scalem(5,5,5));
-			sharedUniforms.M.set(flatten(modelMat));
-			drawObject(gl, cube);
-		}
-	}
 
-	//////////////////////
-
+	////////////////////////////////////////////////////
+	gl.bindTexture(gl.TEXTURE_2D, texture2);
 	setProgramAttributes(gl, cone, phongProgram); 
 
-	modelMat = mult(translate(0, 0, 0), scalem(20,20,20));
-	sharedUniforms.M.set(flatten(modelMat));
-
-	gl.bindTexture(gl.TEXTURE_2D, texture2);
+	M = mult(translate(60, 0, 0), scalem(20,50,20));
+	sharedUniforms.M.set(flatten(M));
+	phongProgram.uniforms.N.set(flatten(getNormalTransformMat3(V,M)));
 	drawObject(gl, cone);
 
+	M = mult(translate(-60, 0, 0), scalem(20,50,20));
+	sharedUniforms.M.set(flatten(M));
+	phongProgram.uniforms.N.set(flatten(getNormalTransformMat3(V,M)));
+	drawObject(gl, cone);
 
-	sharedUniforms.M.set(flatten(scalem(1,1,1)));
-
+	///////////////////////////////////////////
+	gl.bindTexture(gl.TEXTURE_2D, texture);
 	setProgramAttributes(gl, surface, phongProgram); 
+	M = mult(translate(0, 0, 20), scalem(1,1,1));
+	sharedUniforms.M.set(flatten(M));
+	phongProgram.uniforms.N.set(flatten(getNormalTransformMat3(V,M)));
 	drawObject(gl, surface);
+	////////////////////
 
+	setProgramAttributes(gl, surface2, phongProgram); 
+	M = mult(translate(0, 0, -50), scalem(1,1,1));
+	sharedUniforms.M.set(flatten(M));
+	phongProgram.uniforms.N.set(flatten(getNormalTransformMat3(V,M)));
+	drawObject(gl, surface);
 	///////////////////
 	useProgram(gl, primitiveProgram, sharedUniforms, sharedUniformData);
 
-	modelMat = mult(translate(lightPosition[0], lightPosition[1], lightPosition[2]), scalem(5,5,5));
+	M = mult(translate(lightPosition[0], lightPosition[1], lightPosition[2]), scalem(5,5,5));
 
-	sharedUniforms.M.set(flatten(modelMat));
+	sharedUniforms.M.set(flatten(M));
 
 	setProgramAttributes(gl, lightModel, primitiveProgram); 
 	drawObject(gl, lightModel);
