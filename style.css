@@ -1,0 +1,12 @@
+body {
+
+	margin: 20px;
+}
+div {
+margin: 40px;
+}
+
+div div {
+margin: 0px;
+margin-top: 10px;
+}
